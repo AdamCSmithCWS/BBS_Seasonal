@@ -1,0 +1,49 @@
+
+    ###########insert the following text into an existing JAGS model##############
+    ###########making sure to link the relevant parameters into section##############
+    ###########of the model that estimates the full likelihood ##############
+    ###################################################################
+    ###################################################################
+    # the GAM smooth is predicted as intercepts for each whole value of the
+    # predictor (e.g., each year in a temporal smooth)
+    # so the likelihood line will need to include a component such as the following for each data point-i
+    # y[i] <- ..... + gam.sm[i] +....
+    
+    for ( i in 1:n ){
+    for(k in 1:nknots){
+    gamx.part[i,k] <- beta.gamx[k]*(gamx.basis[i,k])
+    }
+    gam.sm[i] <- sum(gamx.part[i,1:nknots])
+    }#i
+    
+    
+    ###################################################################
+    ##### this text assumes the GAM parameters (betas) are estimated as random effects########
+    ##### your will need to provide the variable ngroups (an integer indicating the number of groups in the random effect)####
+    ##### and ensure that your R-script retains the correct order of groups in relation to the predicted values indexed by the 1:ngroups section below ######
+    
+    # Following Crainiceanu, C. M., Ruppert, D. & Wand, M. P. (2005). Bayesian Analysis for Penalized Spline Regression Using WinBUGS. Journal of Statistical Softare, 14 (14), 1-24.
+    
+    taugamx~dgamma(1.0E-2,1.0E-4) #alternate prior, original from Cainiceanu et al. second gamma parameter == 0.0001 << (abs(mean(B.gamx[]))^2)/2, mean(B.gamx[]) ~ 0.2
+    sdgamx <- 1/(pow(taugamx,0.5)) # 
+    
+    for(k in 1:nknots)
+    { # Computation of GAM components
+    beta.gamx[k] ~ dnorm(0,taugamx)
+    
+    
+    for ( i in 1:npredpoints )
+    {
+    gamx.partpred[i,k] <- beta.gamx[k]*(gamx.basispred[i,k])
+    
+    }#i
+    
+    }#k
+    
+    
+    for (i in 1:npredpoints)
+    {
+    
+    gam.smooth[i] <- sum(gamx.part[i,1:nknots])
+  }#i
+    
