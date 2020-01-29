@@ -47,11 +47,10 @@ gam_output <- gam.basis.func(orig.preds = jags_data$yday,
 
 
 
-jags_GAM_data <- c(jags_data, gam_output[c("gamx.basis","gamx.basispred","npredpoints","nknots")])
+jags_GAM_data <- c(jags_data, gam_output[c(1,2,6)])
 
 jags_GAM_data[["date"]] = NULL
 jags_GAM_data[["yday"]] = NULL
-jags_GAM_data[["npredpoints"]] = NULL
 
 ####################################
 # 3: Run JAGS model
