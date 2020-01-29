@@ -8,7 +8,7 @@ model
 
 	{
 
-		log(lambda[k]) <- beta[strat[k]] * (year[k] - fixedyear) + gam.sm[k] + eta*firstyr[k] + obs[strat[k],obser[k]] + strata[strat[k]] + yeareffect[strat[k],year[k]] + noise[k]
+		log(lambda[k]) <- beta[strat[k]] * (year[k] - fixedyear) + gam.sm_day[k] + eta*firstyr[k] + obs[strat[k],obser[k]] + strata[strat[k]] + yeareffect[strat[k],year[k]] + noise[k]
 
 	 	noise[k] ~ dnorm(0, taunoise)
 
@@ -81,25 +81,28 @@ model
 	
 	# Following Crainiceanu, C. M., Ruppert, D. & Wand, M. P. (2005). Bayesian Analysis for Penalized Spline Regression Using WinBUGS. Journal of Statistical Softare, 14 (14), 1-24.
 	
-	taugamx~dgamma(1.0E-2,1.0E-4) #alternate prior, original from Cainiceanu et al. second gamma parameter == 0.0001 << (abs(mean(B.gamx[]))^2)/2, mean(B.gamx[]) ~ 0.2
-	sdgamx <- 1/(pow(taugamx,0.5)) # 
+	######
+	#the effect of this prior is worth exploring
+	#alternatives such as uniform priors on the SD or half-Cauchy may perform better
+	taugam_day~dgamma(1.0E-2,1.0E-4) #original from Cainiceanu et al. second gamma parameter == 0.0001 << (abs(mean(B.gamx[]))^2)/2, mean(B.gamx[]) ~ 0.2
+	sdgam_day <- 1/(pow(taugam_day,0.5)) # 
+	
 	# Computation of GAM components
-	for(k in 1:nknots){
-	  beta.gamx[k] ~ dnorm(0,taugamx)
+	for(k in 1:nknots_day){
+	  beta_day[k] ~ dnorm(0,taugam_day)
 	}
 	
-	gam.sm <-	gamx.basis %*% beta.gamx
+	gam.sm_day <-	day_basis %*% beta_day
 	
-
+	
 	
 	##### derived parameters to visualize the smooth
 	
-	gam.smooth <- gamx.basispred %*% beta.gamx
-	  
-	  
-
-	#----------------------------------#
-
+	vis.sm_day <-	day_basispred %*% beta_day
+	
+	
+	
+	
 	#### stratum effects  ######
 
 	for( i in 1 : nstrata )
@@ -228,7 +231,7 @@ model
 
 			{
 
-				no[i,t,o] <- exp(strata[i] + beta[i]*(t-fixedyear) + yeareffect[i,t] + obs[i,o])
+				no[i,t,o] <- exp(strata[i] + beta[i]*(t-fixedyear) + yeareffect[i,t] + vis.sm_day[42]  + obs[i,o])
 
 			}
 
