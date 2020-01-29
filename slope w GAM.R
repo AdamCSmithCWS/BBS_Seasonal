@@ -34,13 +34,7 @@ model
 
 	}
 
-  for ( i in 1:ncounts ){
-    for(k in 1:nknots){
-      gamx.part[i,k] <- beta.gamx[k]*(gamx.basis[i,k])
-    }
-    gam.sm[i] <- sum(gamx.part[i,1:nknots])
-  }#i
-  
+
 
 	#nfzero <- sum(fzero[1:ncounts])
 
@@ -66,7 +60,7 @@ model
 
 	eta ~ dnorm( 0.0,0.01)
 
-	STRATA ~ dnorm( 0.0,0.01)
+	#STRATA ~ dnorm( 0.0,0.01)
 
 	taustrata ~ dgamma(0.001,0.0001) #<- 1/pow(sdbeta,2)#
 
@@ -89,28 +83,20 @@ model
 	
 	taugamx~dgamma(1.0E-2,1.0E-4) #alternate prior, original from Cainiceanu et al. second gamma parameter == 0.0001 << (abs(mean(B.gamx[]))^2)/2, mean(B.gamx[]) ~ 0.2
 	sdgamx <- 1/(pow(taugamx,0.5)) # 
-	
-	for(k in 1:nknots)
-	{ # Computation of GAM components
+	# Computation of GAM components
+	for(k in 1:nknots){
 	  beta.gamx[k] ~ dnorm(0,taugamx)
-	  
-	  
-	  for ( i in 1:npredpoints )
-	  {
-	    gamx.partpred[i,k] <- beta.gamx[k]*(gamx.basispred[i,k])
-	    
-	  }#i
-	  
-	}#k
+	}
 	
+	gam.sm <-	gamx.basis %*% beta.gamx
 	
-	for (i in 1:npredpoints)
-	{
+
+	
+	##### derived parameters to visualize the smooth
+	
+	gam.smooth <- gamx.basispred %*% beta.gamx
 	  
-	  gam.smooth[i] <- sum(gamx.part[i,1:nknots])
-
-}#i
-
+	  
 
 	#----------------------------------#
 
@@ -142,9 +128,9 @@ model
 
 		beta[i] <- BETA + beta.p[i]
 
-		strata.p[i] ~ dnorm(0,taustrata)
+		strata[i] ~ dnorm(0,taustrata)
 
-		strata[i] <- STRATA + strata.p[i]
+		#strata[i] <- STRATA + strata.p[i]
 
 		#sdyear[i] <- 1/pow(tauyear[i],0.5)
 

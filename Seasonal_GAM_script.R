@@ -4,7 +4,7 @@
 library(bbsBayes)
 library(tidyverse)
 library(lubridate)
-source("seasonal_GAM.R")
+source("GAM_basis_function.R")
 
 ####################################
 # 2: Prepare Data
@@ -31,13 +31,16 @@ jags_data$date <- paste(jags_data$r_year,jags_data$month,
   as.Date()
 
 jags_data$yday <- as.numeric(format(jags_data$date, "%j"))
+jags_data$yday <- jags_data$yday-(min(jags_data$yday)-1)
 
 
 
 gam_output <- gam.basis.func(orig.preds = jags_data$yday,
-                             predpoints = seq(min(jags_data$yday),max(jags_data$yday)),
+                             npredpoints = max(jags_data$yday),
                              nknots = 6,
-                             random = F)
+                             random = F,
+                             sm_name = "day",
+                             standardize = "range")
 
 
 #model_to_file(model = model,filename = paste0(model,"add GAM.R"))
@@ -48,6 +51,7 @@ jags_GAM_data <- c(jags_data, gam_output[c("gamx.basis","gamx.basispred","npredp
 
 jags_GAM_data[["date"]] = NULL
 jags_GAM_data[["yday"]] = NULL
+jags_GAM_data[["npredpoints"]] = NULL
 
 ####################################
 # 3: Run JAGS model
@@ -58,10 +62,10 @@ jags_GAM_data[["yday"]] = NULL
 
 mod <- run_model(jags_data = jags_GAM_data,
                  model_file_path = "slope w GAM.R", ######new model with seasonal GAM
-                 n_burnin = 20000,
-                 n_thin = 10,
-                 n_iter=20000,
-                 n_adapt = 1000,
+                 n_burnin = 20,
+                 n_thin = 1,
+                 n_iter=20,
+                 #n_adapt = 1000,
                  parallel = T,
                  #inits = new.inits,
                  parameters_to_save = c("n","beta","BETA","gam.smooth"))
