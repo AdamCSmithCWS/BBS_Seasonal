@@ -30,6 +30,21 @@ jags_data$date <- paste(jags_data$r_year,jags_data$month,
   ymd() %>%
   as.Date()
 
+earliest_date <- paste(2018,5, 
+                        24, sep = "-") %>%
+  ymd() %>%
+  as.Date()
+as.numeric(format(earliest_date, "%j"))
+
+
+latest_date <- paste(2018,7, 
+                       7, sep = "-") %>%
+  ymd() %>%
+  as.Date()
+as.numeric(format(latest_date, "%j"))
+
+
+
 jags_data$yday <- as.numeric(format(jags_data$date, "%j"))
 jags_data$yday <- jags_data$yday-(min(jags_data$yday)-1)
 
@@ -40,7 +55,9 @@ gam_output <- gam.basis.func(orig.preds = jags_data$yday,
                              nknots = 6,
                              random = F,
                              sm_name = "day",
-                             standardize = "range")
+                             standardize = "range",
+                             even_gaps = F)
+
 
 
 #model_to_file(model = model,filename = paste0(model,"add GAM.R"))
@@ -58,51 +75,35 @@ jags_GAM_data[["yday"]] = NULL
 
 #first run seasonal_GAM.R function
 #defining new model
-
+t1 = Sys.time()
 mod <- run_model(jags_data = jags_GAM_data,
-                 model_file_path = "slope w GAM.R", ######new model with seasonal GAM
-                 n_burnin = 20,
-                 n_thin = 1,
-                 n_iter=20,
+                 model_file_path = "slope model w GAM.txt", ######new model with seasonal GAM
+                 n_burnin = 10000,
+                 n_thin = 10,
+                 n_iter = 10000,
                  #n_adapt = 1000,
                  parallel = T,
                  #inits = new.inits,
-                 parameters_to_save = c("n","beta","BETA","gam.smooth"))
-#new.inits = mod$mcmc.info$end.values
-####################################
-# 4: Model Analysis
-####################################
+                 parameters_to_save = c("n","beta","BETA","vis.sm_day","beta_day","strata"))
+t2 = Sys.time()
+t2-t1
 
-# Calculate WAIC for the model (assuming "lambda" parameter was tracked)
-#waic(jags_data = jags_data, jags_mod = mod)
 
-# Generate and plot continental indices
-cont_indices <- generate_cont_indices(mod)
-pdf(paste0(species,"continental indices.pdf"))
-c_plot <- plot_cont_indices(cont_indices)
-print(c_plot)
-dev.off()
+df = data.frame(mod$summary)
+df$node = row.names(df)
+names(df)[3:7] <- c("lci","lqrt","med","uqrt","uci") 
 
-# Generate and plot strata indices
-strata_indices <- generate_strata_indices(mod)
-s_plots <- plot_strata_indices(strata_indices)
-pdf(paste0(species,"strata indices.pdf"))
-for(j in 1:length(s_plots)){
-print(s_plots[[j]])
-}
-dev.off()
+dfsm = df[paste0("vis.sm_day[",1:gam_output$npredpoints_day,"]"),]
+dfsm$day = 1:gam_output$npredpoints_day
+dfsm$mean_exp = exp(dfsm$mean)
+dfsm$lci_exp = exp(dfsm$lci)
+dfsm$uci_exp = exp(dfsm$uci)
 
-# Generate continental trend
-generate_cont_trend(indices = cont_indices)
 
-# Generate strata-specific trends and plot on a map
-s_trend <- generate_strata_trends(strata_indices)
-map <- generate_map(s_trend, stratify_by = strat)
-pdf(paste0(species,"trend map.pdf"))
+smp = ggplot(data = dfsm,aes(x = day, y = mean_exp))+
+  geom_line()+
+  geom_ribbon(aes(ymin = lci_exp,ymax = uci_exp),alpha = 0.2)
+x11()
+print(smp)
 
-print(map)
-dev.off()
 
-save.image("WOTH full image.RData")
-save(list = c("mod","jags_data"),
-     file = "WOTH model and data.RData")

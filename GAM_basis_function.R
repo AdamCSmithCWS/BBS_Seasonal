@@ -181,7 +181,8 @@ gam.basis.func <- function(orig.preds = df[,""],
                   predpoints = predpoints,
                   nknots = nknots,
                   npredpoints = npredpoints,
-                  mod.code = mod.code)
+                  mod.code = mod.code,
+                  knotsgamx = knotsgamx)
   names(outlist) <- c(paste0(sm_name,"_basis"),
                       paste0(sm_name,"_basispred"),
                       paste0(sm_name,"_scaled_values"),
@@ -189,7 +190,8 @@ gam.basis.func <- function(orig.preds = df[,""],
                       paste0(sm_name,"_visualized_predictor_values"),
                       paste0("nknots_",sm_name),
                       paste0("npredpoints_",sm_name),
-                      paste0(sm_name,"model_code"))
+                      paste0(sm_name,"_model_code"),
+                      paste0(sm_name,"_knots"))
                       
   
   return(outlist)
